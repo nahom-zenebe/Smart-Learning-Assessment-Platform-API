@@ -20,6 +20,7 @@ async def connect_to_mongo():
     db = client[settings.MONGO_DB_NAME]
     print("✅ Connected to MongoDB")
 
+
 async def close_mongo_connection():
     global client
     client.close()
