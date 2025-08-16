@@ -27,3 +27,8 @@ class Progress(BaseModel):
     completed_lessons: int
     total_lessons: int
     last_updated: datetime = datetime.utcnow()
+
+    class Config:
+        allow_population_by_field_name = True
+        arbitrary_types_allowed = True
+        json_encoders = {ObjectId: str}

@@ -1,13 +1,14 @@
 from pydantic import BaseModel, Field
-from typing import Optional
+from typing import Optional, List
 from bson import ObjectId
+from datetime import datetime
 
-#help for vaildaite the serialization
 class PyObjectId(ObjectId):
     @classmethod
-    def __get_validators_(cls):
+    def __get_validators__(cls):
         yield cls.validate
-   @classmethod
+
+    @classmethod
     def validate(cls, v):
         if not ObjectId.is_valid(v):
             raise ValueError("Invalid ObjectId")
@@ -19,9 +20,14 @@ class PyObjectId(ObjectId):
 
 
 class Lesson(BaseModel):
-    id:Optional[str]
-    course_id:str
-    title:str
-    content:str
-    quizzes:List[str]=[]
-    created_at:datetime=datetime.utcnow()
+    id: Optional[PyObjectId] = Field(default=None, alias="_id")
+    course_id: str
+    title: str
+    content: str
+    quizzes: List[str] = []
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+    class Config:
+        allow_population_by_field_name = True
+        arbitrary_types_allowed = True
+        json_encoders = {ObjectId: str}

@@ -23,3 +23,8 @@ class Question(BaseModel):
     text:str
     options:List[str]=[]
     correct_option_id:str
+
+    class Config:
+        allow_population_by_field_name = True
+        arbitrary_types_allowed = True
+        json_encoders = {ObjectId: str}
