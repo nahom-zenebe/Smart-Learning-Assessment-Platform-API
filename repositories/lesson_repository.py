@@ -14,7 +14,6 @@ class LessonRepository:
         result=await self.collection.find_one({"id":ObbjectId(lesson_id)})
         return result
 
-
     async def list_all(self):
         result=await self.collection.find({})
         return [doc async for doc in result]
