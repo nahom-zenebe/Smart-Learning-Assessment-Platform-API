@@ -11,7 +11,7 @@ class LessonRepository:
         return str(result.inserted_id)
 
     async def get_by_id(self,lesson_id:str):
-        result=await self.collection.find_one({"id":ObbjectId(lesson_id)})
+        result=await self.collection.find_one({"id":ObjectId(lesson_id)})
         return result
 
     async def list_all(self):
