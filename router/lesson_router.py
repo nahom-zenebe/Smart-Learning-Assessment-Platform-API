@@ -1,7 +1,7 @@
 
 from fastapi import APIRouter, HTTPException
 from services.lesson_service import LessonService
-from models.lesson import Lesson
+from models.Lesson import Lesson
 
 
 
@@ -10,11 +10,11 @@ service=LessonService()
 
 
 
-@router.post('/',response_mode=Lesson)
+@router.post('/',response_model=Lesson,status_code=status.HTTP_201_CREATED)
 async def create_lesson(lesson:Lesson):
     return await service.create_lesson(lesson)
 
-router.get("/{lesson_id}", response_model=Lesson)
+router.get("/{lesson_id}", response_model=Lesson,status_code=status.HTTP_200_OK)
 async def get_lesson(lesson_id: str):
     lesson = await service.get_lesson(lesson_id)
     if not lesson:
@@ -35,7 +35,6 @@ async def update_lesson(lesson_id: str, lesson: Lesson):
 @router.delete("/{lesson_id}")
 async def delete_lesson(lesson_id: str):
     deleted = await service.delete_lesson(lesson_id)
-    if not deleted:
-        raise HTTPException(status_code=404, detail="Lesson not found")
-    return {"message": "Lesson deleted successfully"}
+    
+    
 
