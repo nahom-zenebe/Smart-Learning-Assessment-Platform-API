@@ -25,7 +25,7 @@ class CourseRepository:
             {"id":Object(course_id)},
             {"$set":updated_data}
         )
-        return await  result
+        return await result
     
     async def delete(self,course_id:str):
         result=await self.collection.delete_one({"id":Object(course_id)})
