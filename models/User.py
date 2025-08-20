@@ -31,7 +31,23 @@ class User(BaseModel):
     email:EmailStr
     password_hash:str
     role:UserRole
-    created_at: datetime = datetime.utcnow()
+    profile_picture:str
+    
+
+class UserInDB(BaseModel):
+    id:Optional[str]=None
+    name:str
+    email:EmailStr
+    hash_password:str
+    role:UserRole
+    profile_picture:str
+
+class UserResponse(BaseModel):
+    name:str
+    email:EmailStr
+    role:UserRole
+    profile_picture:str
+
 
     class Config:
         allow_population_by_field_name = True
