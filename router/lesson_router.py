@@ -35,6 +35,11 @@ async def update_lesson(lesson_id: str, lesson: Lesson):
 @router.delete("/{lesson_id}")
 async def delete_lesson(lesson_id: str):
     deleted = await service.delete_lesson(lesson_id)
+
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Lesson not found")
+    return deleted
+
     
     
 

@@ -20,5 +20,5 @@ class CourseService:
         return await self.course.updatecourse(course,course_id)
 
     
-    async def delete_course(self,course_id):
+    async def delete_course(self,course_id:str):
         return await self.course.delete(course_id)

@@ -4,6 +4,9 @@ from fastapi import FastAPI
 from db.mongodb import  connect_to_mongo,close_mongo_connection
 from router.lesson_router import router as lesson_router
 from router.course_router import router as course_router
+from router.question_router import router as question_router
+
+
 
 app=FastAPI(title="Learning Platform API")
 
@@ -11,6 +14,7 @@ app=FastAPI(title="Learning Platform API")
 
 app.include_router(lesson_router)
 app.include_router(course_router)
+app.include_router(question_router)
 
 
 @app.on_event("startup")
