@@ -8,7 +8,8 @@ from router.question_router import router as question_router
 from router.user_router import router as user_router
 from app.routes import payments
 from app.webhooks import stripe_webhook
-
+from fastapi import FastAPI
+from app.core.middleware import LoggingMiddleware
 app=FastAPI(title="Learning Platform API")
 
 
@@ -18,6 +19,7 @@ app.include_router(course_router)
 app.include_router(question_router)
 app.include_router(user_router)
 app.include_router(payments.router)
+app.add_middleware(LoggingMiddleware)
 app.include_router(stripe_webhook.router)
 
 @app.on_event("startup")
