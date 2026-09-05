@@ -79,7 +79,9 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
     def __init__(self, app):
         super().__init__(app)
-        self._hits: Dict[str, Deque[float]] = defaultdict(deque)
+        # Bucket keyed by (client_ip, "general" | "auth") so general traffic
+        # does not consume the stricter auth budget.
+        self._hits: Dict[Tuple[str, str], Deque[float]] = defaultdict(deque)
 
     async def dispatch(self, request: Request, call_next):
         # Never interrupt CORS preflight / WebSocket upgrades.
@@ -87,12 +89,13 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             return await call_next(request)
 
         ip = _client_ip(request)
+        bucket = "auth" if request.url.path.startswith("/auth/") else "general"
+        limit = AUTH_RATE_LIMIT_MAX if bucket == "auth" else RATE_LIMIT_MAX
+        key = (ip, bucket)
         window = RATE_LIMIT_SECONDS
-        limit = AUTH_RATE_LIMIT_MAX if request.url.path.startswith("/auth/") \
-            else RATE_LIMIT_MAX
 
         now = time.monotonic()
-        hits = self._hits[ip]
+        hits = self._hits[key]
         while hits and now - hits[0] > window:
             hits.popleft()
 

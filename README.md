@@ -11,6 +11,68 @@ pip install -r requirement.txt
 uvicorn app.main:app --reload
 ```
 
+## Security middleware
+
+All requests flow through a middleware pipeline (outermost first):
+
+```
+RateLimit -> JWTAuth -> RoleAccess -> Logging -> route
+```
+
+### 1. Authentication (`JWTAuthMiddleware`)
+
+- **Public paths** (no token needed): `/health`, `/docs`, `/redoc`, `/openapi.json`,
+  `/auth/register`, `/auth/login`, `/webhooks/stripe`.
+- Everything else requires a JWT obtained from `/auth/login`.
+- Send it as `Authorization: Bearer <token>` or as an `access_token` cookie.
+- On success the user claims (`id`, `email`, `role`) are attached to the request.
+- Missing/invalid/expired tokens receive `401`.
+
+```bash
+# register
+curl -s -X POST http://127.0.0.1:8000/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Sam","email":"sam@test.com","password":"pass1234"}'
+
+# login -> access_token
+curl -s -X POST http://127.0.0.1:8000/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Sam","email":"sam@test.com","password":"pass1234"}'
+
+# use the token
+curl -s -H "Authorization: Bearer <token>" http://127.0.0.1:8000/quizzes/
+```
+
+> Admin accounts cannot self-register (returns 400); provision them from an
+> existing admin or directly in the database. Roles are `student`, `instructor`, `admin`.
+
+### 2. Rate limiting (`RateLimitMiddleware`)
+
+In-memory fixed-window limiter keyed by client IP (honours `X-Forwarded-For`).
+General and `/auth/*` endpoints use **separate budgets**. Exceeding the limit
+returns `429` plus a `Retry-After` header.
+
+| Env var | Default | Purpose |
+| ------- | ------- | ------- |
+| `RATE_LIMIT_MAX` | `120` | Requests per IP per window (general API) |
+| `AUTH_RATE_LIMIT_MAX` | `10` | Requests per IP per window (`/auth/*`) |
+| `RATE_LIMIT_SECONDS` | `60` | Window length in seconds |
+
+### 3. Role-based access (`RoleAccessMiddleware`)
+
+Declarative policy in `core/middleware.py::ROLE_POLICIES`. Requests that match a
+rule need one of the listed roles; everything else needs any authenticated user.
+
+| Method | Path prefix | Roles |
+| ------ | ----------- | ----- |
+| `POST/PUT/DELETE` | `/courses`, `/lessons`, `/quizzes`, `/questions` | instructor, admin |
+| `DELETE` | `/submissions`, `/progress` | admin |
+| `*` | `/admin` | admin |
+| fallback (all other authed requests incl. `GET`, `POST /submissions`, `POST /progress`) | any role |
+
+Password hashing is done with `bcrypt` directly (`core/security.py`) and JWTs are
+signed with HS256 using `JWT_SECRET` from the environment.
+
 ## Assessment resources & endpoints
 
 The core flow is: **Quiz -> Question -> Submission (auto-graded) -> Progress**.
