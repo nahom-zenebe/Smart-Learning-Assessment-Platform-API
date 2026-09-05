@@ -1,34 +1,32 @@
-from pydantic import BaseModel, Field
+from datetime import datetime
 from typing import Optional
-from bson import ObjectId
 
-#help for vaildaite the serialization
-class PyObjectId(ObjectId):
-    @classmethod
-    def __get_validators_(cls):
-        yield cls.validate
-   @classmethod
-    def validate(cls, v):
-        if not ObjectId.is_valid(v):
-            raise ValueError("Invalid ObjectId")
-        return ObjectId(v)
+from pydantic import BaseModel, ConfigDict, Field
 
-    @classmethod
-    def __modify_schema__(cls, field_schema):
-        field_schema.update(type="string")
+from models.objectid import PyObjectId
+from models.Question import utcnow
 
 
-
-
-class Progress(BaseModel):
-    id: Optional[str]
+class ProgressBase(BaseModel):
     user_id: str
     course_id: str
-    completed_lessons: int
-    total_lessons: int
-    last_updated: datetime = datetime.utcnow()
+    completed_lessons: int = 0
+    total_lessons: int = 0
 
-    class Config:
-        allow_population_by_field_name = True
-        arbitrary_types_allowed = True
-        json_encoders = {ObjectId: str}
+
+class ProgressCreate(ProgressBase):
+    pass
+
+
+class ProgressUpdate(BaseModel):
+    user_id: Optional[str] = None
+    course_id: Optional[str] = None
+    completed_lessons: Optional[int] = None
+    total_lessons: Optional[int] = None
+
+
+class Progress(ProgressBase):
+    id: Optional[PyObjectId] = None
+    last_updated: datetime = Field(default_factory=utcnow)
+
+    model_config = ConfigDict(populate_by_name=True)

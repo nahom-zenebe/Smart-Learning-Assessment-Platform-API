@@ -1,31 +1,33 @@
-from pydantic import BaseModel, Field
-from typing import Optional
-from bson import ObjectId
+from datetime import datetime
+from typing import List, Optional
 
-#help for vaildaite the serialization
-class PyObjectId(ObjectId):
-    @classmethod
-    def __get_validators_(cls):
-        yield cls.validate
-   @classmethod
-    def validate(cls, v):
-        if not ObjectId.is_valid(v):
-            raise ValueError("Invalid ObjectId")
-        return ObjectId(v)
+from pydantic import BaseModel, ConfigDict, Field
 
-    @classmethod
-    def __modify_schema__(cls, field_schema):
-        field_schema.update(type="string")
+from models.objectid import PyObjectId
+from models.Question import utcnow
 
 
-    class Quiz(BaseModel):
-        id:Optional[str]
-        lesson_id:str
-        title:str
-        questions:List[str]=[]
-        created_id=datetime.utcnow()
+class QuizBase(BaseModel):
+    lesson_id: str
+    title: str
+    description: Optional[str] = None
+    questions: List[str] = []  # linked question ids (managed by QuestionService)
 
-        class Config:
-            allow_population_by_field_name = True
-            arbitrary_types_allowed = True
-            json_encoders = {ObjectId: str}
+
+class QuizCreate(QuizBase):
+    pass
+
+
+class QuizUpdate(BaseModel):
+    lesson_id: Optional[str] = None
+    title: Optional[str] = None
+    description: Optional[str] = None
+    questions: Optional[List[str]] = None
+
+
+class Quiz(QuizBase):
+    id: Optional[PyObjectId] = None
+    created_at: datetime = Field(default_factory=utcnow)
+
+    model_config = ConfigDict(populate_by_name=True)
+

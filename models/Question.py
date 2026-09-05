@@ -1,30 +1,36 @@
-from pydantic import BaseModel, Field
-from typing import Optional
-from bson import ObjectId
+from datetime import datetime, timezone
+from typing import List, Optional
 
-#help for vaildaite the serialization
-class PyObjectId(ObjectId):
-    @classmethod
-    def __get_validators_(cls):
-        yield cls.validate
-   @classmethod
-    def validate(cls, v):
-        if not ObjectId.is_valid(v):
-            raise ValueError("Invalid ObjectId")
-        return ObjectId(v)
+from pydantic import BaseModel, ConfigDict, Field
 
-    @classmethod
-    def __modify_schema__(cls, field_schema):
-        field_schema.update(type="string")
+from models.objectid import PyObjectId
 
-class Question(BaseModel):
-    id:Optional[str]
-    quiz_id:str
-    text:str
-    options:List[str]=[]
-    correct_option_id:str
 
-    class Config:
-        allow_population_by_field_name = True
-        arbitrary_types_allowed = True
-        json_encoders = {ObjectId: str}
+def utcnow() -> datetime:
+    """Timezone-aware UTC now (datetime.utcnow is deprecated in 3.12)."""
+    return datetime.now(timezone.utc)
+
+
+class QuestionBase(BaseModel):
+    quiz_id: str
+    text: str
+    options: List[str] = []
+    correct_option_id: str  # index (as string) of the correct option, e.g. "0"
+
+
+class QuestionCreate(QuestionBase):
+    pass
+
+
+class QuestionUpdate(BaseModel):
+    quiz_id: Optional[str] = None
+    text: Optional[str] = None
+    options: Optional[List[str]] = None
+    correct_option_id: Optional[str] = None
+
+
+class Question(QuestionBase):
+    id: Optional[PyObjectId] = None
+    created_at: datetime = Field(default_factory=utcnow)
+
+    model_config = ConfigDict(populate_by_name=True)
