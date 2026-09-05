@@ -1,37 +1,49 @@
+from typing import List
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, status
+
+from models.Question import Question, QuestionCreate, QuestionUpdate
 from services.question_service import QuestionService
-from models.Question import Question
+
+router = APIRouter(prefix="/questions", tags=["Questions"])
+service = QuestionService()
 
 
+@router.post(
+    "/", response_model=Question, status_code=status.HTTP_201_CREATED
+)
+async def create_question(question: QuestionCreate):
+    """Create a question and link it to its quiz.
 
-router=APIRouter(prefix='/question',tags=["Lessons"])
-serivce=QuestionService()
-
-
-
-@router.post('/',response_model=Question,status_code=status.HTTP_201_CREATED)
-async def create_Quesion(question:Question):
-    question=await serivce.create_Question(question)
-
-@router.get('/',response_model=[Question],status_code=status.HTTP_200_OK)
-async def get_lesson():
-    return await service.getall_Question()
+    ``correct_option_id`` must be the index (as a string) of the correct
+    option inside ``options``, e.g. options=["A", "B", "C"] -> "1" means B.
+    """
+    return await service.create_question(question)
 
 
-@router.put('/{question_id}',response=[Question])
-async def update_question(question_id:str,question:Question):
-    updated=await service.update_Question(question,question_id)
-    if not updated:
-        raise HTTPException(status_code=404,detail="Question is Not Found")
-    return updated
+@router.get(
+    "/", response_model=List[Question], status_code=status.HTTP_200_OK
+)
+async def list_questions(limit: int = 100):
+    return await service.list_questions(limit)
 
 
-@router.delete("/{question_id}")
-async def delete_question(question_id:str):
-    deleted = await service.delete_Question(question_id)
+@router.get(
+    "/{question_id}", response_model=Question, status_code=status.HTTP_200_OK
+)
+async def get_question(question_id: str):
+    return await service.get_question(question_id)
 
-    if not deleted:
-        raise HTTPException(status_code=404, detail="Question not found")
-    return deleted
+
+@router.put(
+    "/{question_id}", response_model=Question, status_code=status.HTTP_200_OK
+)
+async def update_question(question_id: str, question: QuestionUpdate):
+    return await service.update_question(question_id, question)
+
+
+@router.delete("/{question_id}", status_code=status.HTTP_200_OK)
+async def delete_question(question_id: str):
+    await service.delete_question(question_id)
+    return {"message": "Question deleted successfully", "id": question_id}
 

@@ -2,11 +2,14 @@ from typing import List
 
 from fastapi import APIRouter, HTTPException, status
 
+from models.Question import Question
 from models.Quiz import Quiz, QuizCreate, QuizUpdate
+from services.question_service import QuestionService
 from services.quiz_service import QuizService
 
 router = APIRouter(prefix="/quizzes", tags=["Quizzes"])
 service = QuizService()
+question_service = QuestionService()
 
 
 @router.post("/", response_model=Quiz, status_code=status.HTTP_201_CREATED)
