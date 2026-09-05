@@ -1,33 +1,32 @@
-from pydantic import BaseModel, Field
-from typing import Optional, List
-from bson import ObjectId
 from datetime import datetime
+from typing import List, Optional
 
-class PyObjectId(ObjectId):
-    @classmethod
-    def __get_validators__(cls):
-        yield cls.validate
+from pydantic import BaseModel, ConfigDict, Field
 
-    @classmethod
-    def validate(cls, v):
-        if not ObjectId.is_valid(v):
-            raise ValueError("Invalid ObjectId")
-        return ObjectId(v)
-
-    @classmethod
-    def __modify_schema__(cls, field_schema):
-        field_schema.update(type="string")
+from models.objectid import PyObjectId
+from models.Question import utcnow
 
 
-class Lesson(BaseModel):
-    id: Optional[PyObjectId] = Field(default=None, alias="_id")
+class LessonBase(BaseModel):
     course_id: str
     title: str
     content: str
     quizzes: List[str] = []
-    created_at: datetime = Field(default_factory=datetime.utcnow)
 
-    class Config:
-        allow_population_by_field_name = True
-        arbitrary_types_allowed = True
-        json_encoders = {ObjectId: str}
+
+class LessonCreate(LessonBase):
+    pass
+
+
+class LessonUpdate(BaseModel):
+    course_id: Optional[str] = None
+    title: Optional[str] = None
+    content: Optional[str] = None
+    quizzes: Optional[List[str]] = None
+
+
+class Lesson(LessonBase):
+    id: Optional[PyObjectId] = None
+    created_at: datetime = Field(default_factory=utcnow)
+
+    model_config = ConfigDict(populate_by_name=True)

@@ -1,24 +1,27 @@
-from app.db import db
-from app.models.User import UserInDB
+from typing import Optional
+
+from db.mongodb import get_database, serialize_doc
 
 
 class UserRepository:
-    def __init__(self):
-        self.collection=db['users']
+    COLLECTION = "users"
 
-    def create_user(self,user:UserInDB):
-        result=self.collection.insert_one(user)
-        user.id=str(result.inserted_id)
+    @property
+    def collection(self):
+        return get_database()[self.COLLECTION]
+
+    async def create_user(self, user) -> object:
+        """Insert a UserInDB model and return it with the generated id set."""
+        data = user.model_dump(exclude={"id"})
+        result = await self.collection.insert_one(data)
+        user.id = str(result.inserted_id)
         return user
 
-    def get_by_email(self,email:str):
-        user_data=self.collection.find_one({"email":email})
+    async def get_by_email(self, email: str):
+        from models.User import UserInDB
 
-        if user_data:
-            user_data["id"]=str(user_data["_id"])
-            return UserInDB(**user_data)
-
-        return None
-
-    
-    def 
+        doc = await self.collection.find_one({"email": email})
+        if not doc:
+            return None
+        doc = serialize_doc(doc)
+        return UserInDB(**doc)

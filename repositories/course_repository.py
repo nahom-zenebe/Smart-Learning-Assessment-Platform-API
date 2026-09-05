@@ -1,35 +1,41 @@
+from typing import List, Optional
 
-from db.mongo import db
 from bson import ObjectId
 
+from db.mongodb import get_database, serialize_doc
+
+
 class CourseRepository:
-    def __init__(self):
-        self.collection=db.get_collection("Course")
+    COLLECTION = "courses"
 
-    async def createCourse(self,course:dict):
-        result=await self.collection.insert_one(couurse)
-        return str(result._id)
+    @property
+    def collection(self):
+        return get_database()[self.COLLECTION]
 
-    async def get_by_id(self,course_id):
-        result=await self.collection.find_one({"id":ObjectId(course_id)})
-        return result
+    async def create(self, data: dict) -> str:
+        result = await self.collection.insert_one(data)
+        return str(result.inserted_id)
 
+    async def get_by_id(self, course_id: str) -> Optional[dict]:
+        if not ObjectId.is_valid(course_id):
+            return None
+        doc = await self.collection.find_one({"_id": ObjectId(course_id)})
+        return serialize_doc(doc)
 
-    async def get_allcourse(self):
-        result=await self.collection.find({})
-        return [doc async for doc in result]
+    async def list_all(self, limit: int = 100) -> List[dict]:
+        cursor = self.collection.find().sort("_id", -1).limit(limit)
+        return [serialize_doc(doc) for doc in await cursor.to_list(length=limit)]
 
-
-    async def updatecourse(self,updatedcourse,course_id):
-        result=await self.collection.update_one(
-            {"id":Object(course_id)},
-            {"$set":updated_data}
+    async def update(self, course_id: str, data: dict) -> Optional[dict]:
+        if not ObjectId.is_valid(course_id):
+            return None
+        await self.collection.update_one(
+            {"_id": ObjectId(course_id)}, {"$set": data}
         )
-        return await result
-    
-    async def delete(self,course_id:str):
-        result=await self.collection.delete_one({"id":Object(course_id)})
+        return await self.get_by_id(course_id)
 
-
-
-    
+    async def delete(self, course_id: str) -> bool:
+        if not ObjectId.is_valid(course_id):
+            return False
+        result = await self.collection.delete_one({"_id": ObjectId(course_id)})
+        return result.deleted_count > 0

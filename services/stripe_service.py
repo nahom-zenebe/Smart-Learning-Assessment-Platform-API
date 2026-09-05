@@ -1,17 +1,20 @@
 import stripe
-from app.core.config import settings
-from app.models.payment import Payment
-from app.repositories.payment_repo import PaymentRepository
 
+from config import STRIPE_SECRET_KEY
+from models.Payment import Payment
+from repositories.payment_repo import PaymentRepository
 
-stripe.api_key = settings.STRIPE_SECRET_KEY
+stripe.api_key = STRIPE_SECRET_KEY
 
 
 class StripeService:
     @staticmethod
-    def  create_payment_intent(user_id:str,amount:int,currency="usd"):
-        intent=stripe.PaymentIntent.create(
-            amount=amount,
+    async def create_payment_intent(
+        user_id: str, amount: float, currency: str = "usd"
+    ) -> str:
+        """Create a Stripe PaymentIntent; ``amount`` is in dollars."""
+        intent = stripe.PaymentIntent.create(
+            amount=int(round(amount * 100)),
             currency=currency,
             metadata={"user_id": user_id},
             automatic_payment_methods={"enabled": True},
@@ -23,5 +26,5 @@ class StripeService:
             status="pending",
             stripe_payment_intent=intent.id,
         )
-        PaymentRepository.create(payment)
+        await PaymentRepository().create(payment.model_dump(exclude={"id"}))
         return intent.client_secret

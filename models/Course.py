@@ -1,35 +1,38 @@
-from pydantic import BaseModel, Field
-from typing import Optional
-from bson import ObjectId
+from datetime import datetime, timezone
+from typing import List, Optional
 
-#help for vaildaite the serialization
-class PyObjectId(ObjectId):
-    @classmethod
-    def __get_validators_(cls):
-        yield cls.validate
-   @classmethod
-    def validate(cls, v):
-        if not ObjectId.is_valid(v):
-            raise ValueError("Invalid ObjectId")
-        return ObjectId(v)
+from pydantic import BaseModel, ConfigDict, Field
 
-    @classmethod
-    def __modify_schema__(cls, field_schema):
-        field_schema.update(type="string")
+from models.objectid import PyObjectId
+from models.Question import utcnow
 
-    
-class Course(BaseModel):
-    title:str=Field(...,min_length=5)
-    description:optional[str]=None
+
+class CourseBase(BaseModel):
+    title: str = Field(..., min_length=5)
+    description: Optional[str] = None
     instructor_id: str
-    category:str
+    category: str
+    tags: List[str] = []
     lessons: List[str] = []
-    tags:[tags]
-    created_at: datetime = datetime.utcnow()
 
-    class Config:
-        allow_population_by_field_name = True
-        arbitrary_types_allowed = True
-        json_encoders = {ObjectId: str}
+
+class CourseCreate(CourseBase):
+    pass
+
+
+class CourseUpdate(BaseModel):
+    title: Optional[str] = Field(None, min_length=5)
+    description: Optional[str] = None
+    instructor_id: Optional[str] = None
+    category: Optional[str] = None
+    tags: Optional[List[str]] = None
+    lessons: Optional[List[str]] = None
+
+
+class Course(CourseBase):
+    id: Optional[PyObjectId] = None
+    created_at: datetime = Field(default_factory=utcnow)
+
+    model_config = ConfigDict(populate_by_name=True)
 
 

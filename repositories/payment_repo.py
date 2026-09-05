@@ -1,20 +1,29 @@
-from app.db.mongodb import db
-from app.models.payment import Payment
+from typing import Optional
+
+from db.mongodb import get_database, serialize_doc
 
 
 class PaymentRepository:
-    def __init__(self):
-        self.collection=df["payments"]
+    COLLECTION = "payments"
 
-    def create(self,payment:Payment):
-        result=self.collection.insert_one(payment)
-        return str(result.inserted_id) 
+    @property
+    def collection(self):
+        return get_database()[self.COLLECTION]
 
-    def update_status(self, payment_intent_id: str, status: str):
-        self.collection.update_one(
+    async def create(self, data: dict) -> str:
+        result = await self.collection.insert_one(data)
+        return str(result.inserted_id)
+
+    async def update_status(self, payment_intent_id: str, status: str) -> bool:
+        result = await self.collection.update_one(
             {"stripe_payment_intent": payment_intent_id},
-            {"$set": {"status": status}}
+            {"$set": {"status": status}},
         )
-        
-    def get_by_intent(self, intent_id: str):
-        return self.collection.find_one({"stripe_payment_intent": intent_id})
+        return result.modified_count > 0
+
+    async def get_by_intent(self, intent_id: str) -> Optional[dict]:
+        doc = await self.collection.find_one(
+            {"stripe_payment_intent": intent_id}
+        )
+        return serialize_doc(doc)
+
