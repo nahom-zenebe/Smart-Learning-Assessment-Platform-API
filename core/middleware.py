@@ -47,8 +47,16 @@ ROLE_POLICIES: List[Tuple[Set[str], str, Set[str]]] = [
     # Moderation - only admins can delete submissions / progress
     ({"DELETE"}, "/submissions", {"admin"}),
     ({"DELETE"}, "/progress", {"admin"}),
+    # Notifications - only instructors/admins can send new notifications
+    ({"POST"}, "/notifications", {"instructor", "admin"}),
     # Admin area
     ({"*"}, "/admin", {"admin"}),
+    # Analytics - platform/quiz/course/question stats for staff; the
+    # /analytics/users rule is intentionally absent (own stats for anyone)
+    ({"*"}, "/analytics/dashboard", {"admin"}),
+    ({"*"}, "/analytics/quizzes", {"instructor", "admin"}),
+    ({"*"}, "/analytics/questions", {"instructor", "admin"}),
+    ({"*"}, "/analytics/courses", {"instructor", "admin"}),
 ]
 
 

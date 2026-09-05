@@ -9,14 +9,17 @@ from core.middleware import (
     RoleAccessMiddleware,
 )
 from db.mongodb import close_mongo_connection, connect_to_mongo
+from router.analytics_router import router as analytics_router
 from router.course_router import router as course_router
 from router.lesson_router import router as lesson_router
+from router.notification_router import router as notification_router
 from router.progress_router import router as progress_router
 from router.question_router import router as question_router
 from router.quiz_router import router as quiz_router
 from router.submission_router import router as submission_router
 from router.user_router import router as user_router
 from router.payments import router as payments_router
+from router.ws_router import router as ws_router
 from webhooks.stripe_webhook import router as stripe_webhook_router
 
 
