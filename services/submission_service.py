@@ -7,6 +7,9 @@ from models.Submission import SubmissionCreate
 from repositories.question_repository import QuestionRepository
 from repositories.quiz_repository import QuizRepository
 from repositories.submission_repository import SubmissionRepository
+from services.notification_service import NotificationService
+
+PASS_SCORE = 70.0
 
 
 class SubmissionService:
@@ -14,6 +17,7 @@ class SubmissionService:
         self.repo = SubmissionRepository()
         self.quiz_repo = QuizRepository()
         self.question_repo = QuestionRepository()
+        self.notifications = NotificationService()
 
     async def create_submission(self, data: SubmissionCreate) -> dict:
         """Grade a quiz attempt server-side and store the submission.
@@ -53,7 +57,29 @@ class SubmissionService:
         payload["submitted_at"] = utcnow()
 
         submission_id = await self.repo.create(payload)
-        return await self.repo.get_by_id(submission_id)
+        submission = await self.repo.get_by_id(submission_id)
+
+        # Best-effort grade notification (persisted + live WS push).
+        try:
+            await self.notifications.create_notification(
+                user_id=payload["user_id"],
+                title="Quiz graded",
+                message=(
+                    f"You scored {score}% on quiz '{quiz['title']}' "
+                    f"({correct_count}/{len(questions)} correct)"
+                ),
+                notification_type="grade",
+                data={
+                    "submission_id": submission_id,
+                    "quiz_id": data.quiz_id,
+                    "score": score,
+                    "passed": score >= PASS_SCORE,
+                },
+            )
+        except Exception:
+            pass  # notifications must never break the submission flow
+
+        return submission
 
     async def get_submission(self, submission_id: str) -> dict:
         submission = await self.repo.get_by_id(submission_id)

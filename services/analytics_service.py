@@ -80,7 +80,9 @@ class AnalyticsService:
             "max_score": summary["max_score"],
             "pass_rate": summary["pass_rate"],
             "distribution": distribution,
-# --- questions --------------------------------------------------------
+        }
+
+    # --- questions --------------------------------------------------------
 
     async def question_analytics(self, question_id: str) -> dict:
         question = await self.question_repo.get_by_id(question_id)
@@ -196,5 +198,4 @@ class AnalyticsService:
             else 0.0,
             "completed_count": completed,
             "in_progress_count": len(rows) - completed,
-        }
         }

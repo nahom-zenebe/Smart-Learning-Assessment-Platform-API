@@ -5,11 +5,13 @@ from fastapi import HTTPException, status
 from models.Progress import ProgressCreate, ProgressUpdate
 from models.Question import utcnow
 from repositories.progress_repository import ProgressRepository
+from services.notification_service import NotificationService
 
 
 class ProgressService:
     def __init__(self):
         self.repo = ProgressRepository()
+        self.notifications = NotificationService()
 
     @staticmethod
     def _validate_counts(completed_lessons: int, total_lessons: int) -> None:
@@ -39,10 +41,46 @@ class ProgressService:
         )
         if existing:
             updated = await self.repo.update(existing["id"], payload)
+            await self._notify_progress(updated, created=False)
             return updated, False
 
         progress_id = await self.repo.create(payload)
-        return await self.repo.get_by_id(progress_id), True
+        progress = await self.repo.get_by_id(progress_id)
+        await self._notify_progress(progress, created=True)
+        return progress, True
+
+    async def _notify_progress(self, progress: Optional[dict], created: bool) -> None:
+        """Best-effort progress/completion notification (never fails the flow)."""
+        if not progress:
+            return
+        completed = progress.get("completed_lessons") or 0
+        total = progress.get("total_lessons") or 0
+        course_id = progress.get("course_id", "")
+        if total > 0 and completed >= total:
+            title, ntype = "Course completed 🎉", "success"
+            message = f"You finished all {total} lessons of course {course_id}!"
+        else:
+            title, ntype = "Progress updated", "progress"
+            action = "started" if created else "updated"
+            message = (
+                f"Progress {action} for course {course_id}: "
+                f"{completed}/{total} lessons completed"
+            )
+        try:
+            await self.notifications.create_notification(
+                user_id=str(progress.get("user_id")),
+                title=title,
+                message=message,
+                notification_type=ntype,
+                data={
+                    "progress_id": progress.get("id"),
+                    "course_id": course_id,
+                    "completed_lessons": completed,
+                    "total_lessons": total,
+                },
+            )
+        except Exception:
+            pass
 
     async def get_progress(self, progress_id: str) -> dict:
         progress = await self.repo.get_by_id(progress_id)
