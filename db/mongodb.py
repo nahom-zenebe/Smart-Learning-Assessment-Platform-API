@@ -25,8 +25,9 @@ async def connect_to_mongo() -> None:
     mongodb_url = settings.MONGODB_URL or "mongodb://localhost:27017"
     client = AsyncIOMotorClient(mongodb_url)
 
-    default_db = client.get_default_database()
-    db_name = default_db.name if default_db else "smart_learning_db"
+    db_name = client.get_default_database(
+        default="smart_learning_db"
+    ).name
     db = client[db_name]
 
     print(f"✅ Connected to MongoDB database: {db_name}")

@@ -1,6 +1,6 @@
 from typing import List
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, status
 
 from models.Question import Question
 from models.Quiz import Quiz, QuizCreate, QuizUpdate
