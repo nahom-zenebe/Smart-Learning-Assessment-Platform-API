@@ -2,7 +2,12 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from core.middleware import LoggingMiddleware
+from core.middleware import (
+    JWTAuthMiddleware,
+    LoggingMiddleware,
+    RateLimitMiddleware,
+    RoleAccessMiddleware,
+)
 from db.mongodb import close_mongo_connection, connect_to_mongo
 from router.course_router import router as course_router
 from router.lesson_router import router as lesson_router
@@ -29,7 +34,12 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# Middleware order matters in Starlette: the LAST one added is the OUTERMOST.
+# Execution order on the way in: RateLimit -> JWTAuth -> RoleAccess -> Logging.
 app.add_middleware(LoggingMiddleware)
+app.add_middleware(RoleAccessMiddleware)
+app.add_middleware(JWTAuthMiddleware)
+app.add_middleware(RateLimitMiddleware)
 
 app.include_router(quiz_router)
 app.include_router(question_router)
