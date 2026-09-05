@@ -1,4 +1,3 @@
-from datetime import timezone
 from typing import List, Optional
 
 from fastapi import HTTPException, status
@@ -51,7 +50,7 @@ class SubmissionService:
 
         payload = data.model_dump()
         payload["score"] = score
-        payload["submitted_at"] = utcnow().replace(tzinfo=timezone.utc)
+        payload["submitted_at"] = utcnow()
 
         submission_id = await self.repo.create(payload)
         return await self.repo.get_by_id(submission_id)
