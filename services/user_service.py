@@ -8,6 +8,10 @@ class AuthService:
         self.user_repo = UserRepository()
 
     async def register_user(self, user_data: UserCreate) -> UserInDB:
+        if user_data.role.value == "admin":
+            # Admins must be provisioned by an existing admin, never self-registered.
+            raise ValueError("Admin accounts cannot be self-registered")
+
         existing = await self.user_repo.get_by_email(user_data.email)
         if existing:
             raise ValueError("User already exists")
@@ -25,5 +29,11 @@ class AuthService:
         user = await self.user_repo.get_by_email(email)
         if not user or not verify_password(password, user.hashed_password):
             raise ValueError("Invalid credentials")
-        token = create_access_token({"sub": user.email})
+        token = create_access_token(
+            {
+                "sub": user.email,
+                "user_id": str(user.id),
+                "role": user.role.value,
+            }
+        )
         return token
