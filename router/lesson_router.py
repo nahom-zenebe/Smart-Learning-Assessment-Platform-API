@@ -1,45 +1,43 @@
 
-from fastapi import APIRouter, HTTPException
+from typing import List
+
+from fastapi import APIRouter, status
+
+from models.Lesson import Lesson, LessonCreate, LessonUpdate
 from services.lesson_service import LessonService
-from models.Lesson import Lesson
+
+router = APIRouter(prefix="/lessons", tags=["Lessons"])
+service = LessonService()
 
 
-
-router=APIRouter(prefix="/lessons", tags=["Lessons"])
-service=LessonService()
-
-
-
-@router.post('/',response_model=Lesson,status_code=status.HTTP_201_CREATED)
-async def create_lesson(lesson:Lesson):
+@router.post(
+    "/", response_model=Lesson, status_code=status.HTTP_201_CREATED
+)
+async def create_lesson(lesson: LessonCreate):
     return await service.create_lesson(lesson)
 
-router.get("/{lesson_id}", response_model=Lesson,status_code=status.HTTP_200_OK)
+
+@router.get("/", response_model=List[Lesson], status_code=status.HTTP_200_OK)
+async def list_lessons(limit: int = 100):
+    return await service.list_lessons(limit)
+
+
+@router.get(
+    "/{lesson_id}", response_model=Lesson, status_code=status.HTTP_200_OK
+)
 async def get_lesson(lesson_id: str):
-    lesson = await service.get_lesson(lesson_id)
-    if not lesson:
-        raise HTTPException(status_code=404, detail="Lesson not found")
-    return lesson
+    return await service.get_lesson(lesson_id)
 
-@router.get("/", response_model=list[Lesson])
-async def list_lessons():
-    return await service.list_lessons()
 
-@router.put("/{lesson_id}", response_model=Lesson)
-async def update_lesson(lesson_id: str, lesson: Lesson):
-    updated = await service.update_lesson(lesson_id, lesson.dict(exclude_unset=True))
-    if not updated:
-        raise HTTPException(status_code=404, detail="Lesson not found")
-    return updated
+@router.put(
+    "/{lesson_id}", response_model=Lesson, status_code=status.HTTP_200_OK
+)
+async def update_lesson(lesson_id: str, lesson: LessonUpdate):
+    return await service.update_lesson(lesson_id, lesson)
 
-@router.delete("/{lesson_id}")
+
+@router.delete("/{lesson_id}", status_code=status.HTTP_200_OK)
 async def delete_lesson(lesson_id: str):
-    deleted = await service.delete_lesson(lesson_id)
-
-    if not deleted:
-        raise HTTPException(status_code=404, detail="Lesson not found")
-    return deleted
-
-    
-    
+    await service.delete_lesson(lesson_id)
+    return {"message": "Lesson deleted successfully", "id": lesson_id}
 
