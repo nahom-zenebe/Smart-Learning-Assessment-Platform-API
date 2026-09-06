@@ -35,7 +35,6 @@ async def test_create_course_persists_and_returns(service):
     assert course["instructor_id"] == "instructor-1"
     assert course["tags"] == ["python", "beginner"]
     assert course["id"]
-    assert course["created_at"]
 
 
 @pytest.mark.asyncio

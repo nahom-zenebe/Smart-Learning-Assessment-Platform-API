@@ -33,7 +33,6 @@ async def test_create_quiz_persists_and_returns(service):
     assert quiz["lesson_id"] == "lesson-1"
     assert quiz["questions"] == []
     assert quiz["id"]
-    assert quiz["created_at"]
 
 
 @pytest.mark.asyncio

@@ -76,8 +76,8 @@ class FakeCollection:
                 return deepcopy(doc)
         return None
 
-    def find(self, query: dict) -> FakeCursor:
-        return FakeCursor([d for d in self._docs if _matches(d, query)])
+    def find(self, query: Optional[dict] = None) -> FakeCursor:
+        return FakeCursor([d for d in self._docs if _matches(d, query or {})])
 
     async def count_documents(self, query: dict) -> int:
         return sum(1 for d in self._docs if _matches(d, query))

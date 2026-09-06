@@ -33,6 +33,12 @@ jobs:
       - name: Import application
         run: python -c "from app.main import app; assert app.title"
 
+      - name: Install test dependencies
+        run: python -m pip install -r requirement-dev.txt
+
+      - name: Run tests
+        run: python -m pytest -q
+
       - name: Validate Compose configuration
         run: JWT_SECRET=ci-only-secret docker compose config
 

@@ -105,3 +105,150 @@ class TestCreateQuestion:
 
         refreshed_quiz = await quiz_service.get_quiz(quiz["id"])
         assert refreshed_quiz["questions"] == []  # nothing was linked
+
+class TestReadQuestions:
+    @pytest.mark.asyncio
+    async def test_get_question(self, question_service, quiz_service):
+        quiz = await create_quiz(quiz_service)
+        created = await question_service.create_question(
+            make_question_data(quiz["id"])
+        )
+
+        fetched = await question_service.get_question(created["id"])
+
+        assert fetched["id"] == created["id"]
+        assert fetched["text"] == "What is 2 + 2?"
+
+    @pytest.mark.asyncio
+    async def test_get_question_not_found(self, question_service):
+        with pytest.raises(HTTPException) as exc:
+            await question_service.get_question(VALID_ID)
+        assert exc.value.status_code == 404
+
+    @pytest.mark.asyncio
+    async def test_list_questions(self, question_service, quiz_service):
+        quiz = await create_quiz(quiz_service)
+        for index in range(3):
+            await question_service.create_question(
+                make_question_data(quiz["id"], text=f"Question number {index}")
+            )
+
+        questions = await question_service.list_questions()
+
+        assert len(questions) == 3
+
+    @pytest.mark.asyncio
+    async def test_list_questions_by_quiz(self, question_service, quiz_service):
+        quiz_a = await create_quiz(quiz_service, title="Quiz A Title")
+        quiz_b = await create_quiz(quiz_service, title="Quiz B Title")
+        for index in range(2):
+            await question_service.create_question(
+                make_question_data(quiz_a["id"], text=f"A question {index}")
+            )
+        await question_service.create_question(
+            make_question_data(quiz_b["id"], text="B question")
+        )
+
+        questions_a = await question_service.list_questions_by_quiz(quiz_a["id"])
+
+        assert [q["text"] for q in questions_a] == ["A question 0", "A question 1"]
+
+    @pytest.mark.asyncio
+    async def test_list_questions_by_unknown_quiz(self, question_service):
+        with pytest.raises(HTTPException) as exc:
+            await question_service.list_questions_by_quiz(VALID_ID)
+        assert exc.value.status_code == 404
+
+
+class TestUpdateQuestion:
+    @pytest.mark.asyncio
+    async def test_update_text_only(self, question_service, quiz_service):
+        quiz = await create_quiz(quiz_service)
+        created = await question_service.create_question(
+            make_question_data(quiz["id"])
+        )
+
+        updated = await question_service.update_question(
+            created["id"], QuestionUpdate(text="Updated question text")
+        )
+
+        assert updated["text"] == "Updated question text"
+        assert updated["correct_option_id"] == "1"  # untouched field stays
+
+    @pytest.mark.asyncio
+    async def test_update_invalid_correct_option_rejected(
+        self, question_service, quiz_service
+    ):
+        quiz = await create_quiz(quiz_service)
+        created = await question_service.create_question(
+            make_question_data(quiz["id"])
+        )
+
+        with pytest.raises(HTTPException) as exc:
+            await question_service.update_question(
+                created["id"], QuestionUpdate(correct_option_id="99")
+            )
+        assert exc.value.status_code == 400
+
+    @pytest.mark.asyncio
+    async def test_moving_question_between_quizzes_updates_links(
+        self, question_service, quiz_service
+    ):
+        quiz_a = await create_quiz(quiz_service, title="Quiz A Title")
+        quiz_b = await create_quiz(quiz_service, title="Quiz B Title")
+        created = await question_service.create_question(
+            make_question_data(quiz_a["id"])
+        )
+
+        updated = await question_service.update_question(
+            created["id"], QuestionUpdate(quiz_id=quiz_b["id"])
+        )
+
+        assert updated["quiz_id"] == quiz_b["id"]
+        assert (await quiz_service.get_quiz(quiz_a["id"]))["questions"] == []
+        assert (await quiz_service.get_quiz(quiz_b["id"]))["questions"] == [
+            created["id"]
+        ]
+
+    @pytest.mark.asyncio
+    async def test_move_to_unknown_quiz_rejected(self, question_service, quiz_service):
+        quiz = await create_quiz(quiz_service)
+        created = await question_service.create_question(
+            make_question_data(quiz["id"])
+        )
+
+        with pytest.raises(HTTPException) as exc:
+            await question_service.update_question(
+                created["id"], QuestionUpdate(quiz_id=VALID_ID)
+            )
+        assert exc.value.status_code == 404
+
+    @pytest.mark.asyncio
+    async def test_update_missing_question_not_found(self, question_service):
+        with pytest.raises(HTTPException) as exc:
+            await question_service.update_question(
+                VALID_ID, QuestionUpdate(text="Ghost question")
+            )
+        assert exc.value.status_code == 404
+
+
+class TestDeleteQuestion:
+    @pytest.mark.asyncio
+    async def test_deletes_and_unlinks_from_quiz(self, question_service, quiz_service):
+        quiz = await create_quiz(quiz_service)
+        created = await question_service.create_question(
+            make_question_data(quiz["id"])
+        )
+
+        await question_service.delete_question(created["id"])
+
+        with pytest.raises(HTTPException):
+            await question_service.get_question(created["id"])
+        assert (await quiz_service.get_quiz(quiz["id"]))["questions"] == []
+
+    @pytest.mark.asyncio
+    async def test_delete_missing_question_not_found(self, question_service):
+        with pytest.raises(HTTPException) as exc:
+            await question_service.delete_question(VALID_ID)
+        assert exc.value.status_code == 404
+
