@@ -11,6 +11,25 @@ pip install -r requirement.txt
 uvicorn app.main:app --reload
 ```
 
+## Docker
+
+Copy `.env` from your local environment or create it with at least a strong
+`JWT_SECRET`, then start the API and MongoDB together:
+
+```bash
+docker compose up --build
+```
+
+The API is available at http://127.0.0.1:8000 and its interactive docs are at
+http://127.0.0.1:8000/docs. MongoDB data is stored in the named
+`mongo_data` volume. Stop the stack with `docker compose down`; add `-v` only
+when you also want to delete the database volume.
+
+The GitHub Actions workflow runs dependency installation, Python compilation,
+application import, Compose validation, and a Docker build on pull requests
+and pushes. A push to `main` also publishes the image to GitHub Container
+Registry as `latest` and with its commit SHA.
+
 ## Security middleware
 
 All requests flow through a middleware pipeline (outermost first):
