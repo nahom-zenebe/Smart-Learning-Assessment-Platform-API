@@ -76,7 +76,7 @@ class QuestionCreate(QuestionBase):
     pass
 
 
-class QuestionUpdate(BaseModel:
+class QuestionUpdate(BaseModel):
     quiz_id: Optional[str] = None
     question_type: Optional[QuestionType] = None
     text: Optional[str] = None
@@ -88,7 +88,7 @@ class QuestionUpdate(BaseModel:
     case_sensitive: Optional[bool] = None
 
 
-class Question(QuestionBase:
+class Question(QuestionBase):
     id: Optional[PyObjectId] = None
     created_at: datetime = Field(default_factory=utcnow)
 
