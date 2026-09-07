@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List, Optional
+from typing import Any, List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -10,7 +10,7 @@ from models.Question import utcnow
 class SubmissionBase(BaseModel):
     quiz_id: str
     user_id: str
-    answers: List[str] = []  # one chosen option index (as string) per question
+    answers: List[Any] = []  # one answer per question; format depends on question_type
 
 
 class SubmissionCreate(SubmissionBase):
